@@ -21,21 +21,26 @@ def main():
                 else:
                     with st.spinner("Autenticando..."):
                         try:
-                            # Mock para desenvolvimento caso a API falhe, como aprovado pelo usuário
+                            result = None
+                            # Mock para desenvolvimento apenas se não encontrar a API
                             try:
                                 result = api_client.login(email, senha)
                             except Exception as e:
-                                st.warning("Usando dados de demonstração – API não encontrada ou erro de rede.")
-                                result = {
-                                    "access_token": "mock_token_123",
-                                    "user": {
-                                        "id": 1,
-                                        "email": email,
-                                        "nome": "Usuário Teste",
-                                        "role": "aluno" if "aluno" in email else "professor"
+                                error_msg = str(e)
+                                if "Erro de conexão" in error_msg or "Timeout" in error_msg:
+                                    st.warning("Usando dados de demonstração – API não encontrada ou erro de rede.")
+                                    result = {
+                                        "access_token": "mock_token_123",
+                                        "user": {
+                                            "id": 1,
+                                            "email": email,
+                                            "nome": "Usuário Teste",
+                                            "role": "aluno" if "aluno" in email else "professor"
+                                        }
                                     }
-                                }
-                                
+                                else:
+                                    st.error(f"Erro ao entrar: {error_msg.split('-')[-1].strip() if '-' in error_msg else error_msg}")
+                                    
                             if result:
                                 st.session_state.token = result.get("access_token")
                                 st.session_state.user = result.get("user")

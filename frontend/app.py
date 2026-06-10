@@ -1,10 +1,12 @@
 import streamlit as st
-
+from utils import inject_css
 st.set_page_config(
     page_title="TAJI - Bem-vindo",
     page_icon="🎓",
     layout="centered"
 )
+
+inject_css()
 
 def main():
     st.title("🎓 Bem-vindo ao Sistema TAJI")

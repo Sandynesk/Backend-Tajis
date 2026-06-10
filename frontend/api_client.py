@@ -36,7 +36,7 @@ def api_request(method, endpoint, data=None, params=None):
         else:
             raise ValueError(f"Método HTTP não suportado: {method}")
 
-        if response.status_code == 401:
+        if response.status_code == 401 and not endpoint.endswith("/login"):
             handle_401()
             return None # Nunca vai chegar aqui devido ao st.rerun()
 

@@ -1,8 +1,10 @@
 import streamlit as st
-from utils import check_login, logout
+from utils import check_login, logout, inject_css
+from components.ui import xp_bar, stat_card, divider
 import api_client
 
 st.set_page_config(page_title="Dashboard - TAJI", page_icon="🏠", layout="wide")
+inject_css()
 
 def carregar_dados_aluno():
     try:
@@ -45,12 +47,21 @@ def main():
         dados = carregar_dados_aluno()
         
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Pontuação Total", f"{dados.get('pontuacao', 0)} XP")
-        col2.metric("Nível Atual", dados.get('nivel', 1))
-        col3.metric("Desafios Concluídos", dados.get('desafios_completos', 0))
-        col4.metric("Missões Ativas", dados.get('missoes_ativas', 0))
+        with col1:
+            st.markdown(stat_card("Pontuação Total", f"{dados.get('pontuacao', 0)} XP", delta="↑ Nível subiu"), unsafe_allow_html=True)
+        with col2:
+            st.markdown(stat_card("Nível Atual", str(dados.get('nivel', 1))), unsafe_allow_html=True)
+        with col3:
+            st.markdown(stat_card("Desafios", str(dados.get('desafios_completos', 0))), unsafe_allow_html=True)
+        with col4:
+            st.markdown(stat_card("Missões Ativas", str(dados.get('missoes_ativas', 0))), unsafe_allow_html=True)
         
-        st.divider()
+        st.markdown(divider("progresso da temporada"), unsafe_allow_html=True)
+        # XP para o próximo nível (mock 3000)
+        xp_atual = dados.get('pontuacao', 0)
+        xp_prox = max(3000, xp_atual + 500)
+        st.markdown(xp_bar(xp_atual=xp_atual, xp_proximo=xp_prox, nivel=dados.get('nivel', 1)), unsafe_allow_html=True)
+        
         st.write("Use o menu lateral para navegar entre Desafios, Provas e Missões.")
 
     elif role == "professor":
