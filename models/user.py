@@ -11,6 +11,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     role: str
+    user: Optional[dict] = None
 
 # --- Schemas de Aluno ---
 class AlunoCreate(BaseModel):

@@ -58,4 +58,11 @@ class AuthService:
         # Gerar o token
         access_token = create_access_token(subject=user["id"], role=role)
         
-        return TokenResponse(access_token=access_token, token_type="bearer", role=role)
+        user_data = {
+            "id": user["id"],
+            "nome": user.get("nome"),
+            "email": user.get("email"),
+            "role": role
+        }
+        
+        return TokenResponse(access_token=access_token, token_type="bearer", role=role, user=user_data)

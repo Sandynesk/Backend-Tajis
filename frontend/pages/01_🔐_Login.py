@@ -64,13 +64,16 @@ def main():
                         api_client.register_aluno({
                             "nome": nome,
                             "email": email_aluno,
-                            "senha": senha_aluno,
-                            "matricula": matricula
+                            "senha": senha_aluno
                         })
                         st.success("Cadastro realizado! Por favor, faça login na aba correspondente.")
                     except Exception as e:
-                        st.warning("Mock: Simulando sucesso de cadastro.")
-                        st.success("Cadastro realizado! Por favor, faça login na aba correspondente.")
+                        error_msg = str(e)
+                        if "Erro de conexão" in error_msg or "Timeout" in error_msg:
+                            st.warning("Usando dados de demonstração – API não encontrada ou erro de rede.")
+                            st.success("Cadastro realizado (Mock)! Por favor, faça login na aba correspondente.")
+                        else:
+                            st.error(f"Erro ao cadastrar: {error_msg.split('-')[-1].strip() if '-' in error_msg else error_msg}")
 
     with tab3:
         with st.form("register_professor_form"):
@@ -92,8 +95,12 @@ def main():
                         })
                         st.success("Cadastro realizado! Por favor, faça login na aba correspondente.")
                     except Exception as e:
-                        st.warning("Mock: Simulando sucesso de cadastro.")
-                        st.success("Cadastro realizado! Por favor, faça login na aba correspondente.")
+                        error_msg = str(e)
+                        if "Erro de conexão" in error_msg or "Timeout" in error_msg:
+                            st.warning("Usando dados de demonstração – API não encontrada ou erro de rede.")
+                            st.success("Cadastro realizado (Mock)! Por favor, faça login na aba correspondente.")
+                        else:
+                            st.error(f"Erro ao cadastrar: {error_msg.split('-')[-1].strip() if '-' in error_msg else error_msg}")
 
 if __name__ == "__main__":
     main()

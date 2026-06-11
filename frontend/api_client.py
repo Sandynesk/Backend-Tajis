@@ -48,6 +48,9 @@ def api_request(method, endpoint, data=None, params=None):
             
         if not response.ok:
             error_detail = json_data.get("detail", "Erro desconhecido") if json_data else response.text
+            if isinstance(error_detail, list):
+                msgs = [f"{e.get('loc', [''])[-1]}: {e.get('msg', '')}" for e in error_detail]
+                error_detail = " | ".join(msgs)
             raise Exception(f"{response.status_code} - {error_detail}")
             
         return json_data
