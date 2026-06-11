@@ -44,7 +44,12 @@ def main():
                             if result:
                                 st.session_state.token = result.get("access_token")
                                 st.session_state.user = result.get("user")
-                                st.success("Login realizado com sucesso!")
+                                
+                                # Obter turma padrão
+                                turma = api_client.get_turma_padrao()
+                                st.session_state.turma_id = turma.get("id")
+                                
+                                st.success(f"Bem-vindo! Você está vinculado à {turma.get('nome')}.")
                                 st.switch_page("pages/02_🏠_Dashboard.py")
                         except Exception as e:
                             st.error(str(e))

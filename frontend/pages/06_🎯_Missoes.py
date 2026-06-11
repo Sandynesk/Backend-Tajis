@@ -8,10 +8,8 @@ def carregar_missoes(turma_id):
     try:
         return api_client.listar_missoes_turma(turma_id)
     except Exception as e:
-        return [
-            {"id": 1, "titulo": "Mestre dos Arrays", "descricao": "Complete 3 desafios sobre arrays.", "pontos_recompensa": 500, "status": "disponivel"},
-            {"id": 2, "titulo": "Sobrevivente", "descricao": "Tire nota máxima em uma mini-prova.", "pontos_recompensa": 300, "status": "em_andamento"}
-        ]
+        st.error(f"Erro ao carregar missões: {e}")
+        return []
 
 def main():
     check_login()
@@ -19,41 +17,55 @@ def main():
     
     st.title("🎯 Missões")
     
-    turma_id_mock = 1
+    turma_id = st.session_state.get("turma_id")
+    if not turma_id:
+        st.warning("Você não está vinculado a nenhuma turma.")
+        return
     
     if role == "professor":
         with st.expander("➕ Criar Nova Missão"):
             with st.form("form_nova_missao"):
-                st.write("Configuração da Missão (Mock)")
                 titulo = st.text_input("Título da Missão")
                 desc = st.text_area("Descrição")
-                pontos = st.number_input("Recompensa (XP)", min_value=50, step=50)
+                # No MVP simplificado, a criação só pede titulo e descricao. Recompensa fica por etapa.
                 
                 if st.form_submit_button("Criar Missão"):
-                    st.success("Missão criada!")
+                    with st.spinner("Salvando..."):
+                        try:
+                            api_client.api_request("POST", "/missoes/", data={
+                                "titulo": titulo,
+                                "descricao": desc,
+                                "turma_id": turma_id
+                            })
+                            st.success("Missão criada!")
+                        except Exception as e:
+                            st.error(f"Erro ao criar missão: {e}")
                     
         st.subheader("Missões Ativas da Turma")
-        missoes = carregar_missoes(turma_id_mock)
+        missoes = carregar_missoes(turma_id)
+        if not missoes:
+            st.info("Nenhuma missão criada ainda.")
         for m in missoes:
-            st.write(f"- **{m['titulo']}**: {m['descricao']} ({m['pontos_recompensa']} XP)")
+            st.write(f"- **{m.get('titulo')}**: {m.get('descricao')}")
             
     elif role == "aluno":
         st.subheader("Trilhas de Aprendizagem")
-        missoes = carregar_missoes(turma_id_mock)
+        missoes = carregar_missoes(turma_id)
         
+        if not missoes:
+            st.info("Nenhuma trilha de aprendizagem disponível no momento.")
+            
         for m in missoes:
             with st.container(border=True):
                 col1, col2 = st.columns([3, 1])
-                col1.markdown(f"### {m['titulo']}")
-                col1.write(m['descricao'])
+                col1.markdown(f"### {m.get('titulo')}")
+                col1.write(m.get('descricao'))
                 
-                if m['status'] == "disponivel":
-                    if col2.button("Iniciar Missão", key=f"btn_iniciar_{m['id']}", type="primary"):
-                        st.success("Missão Iniciada!")
-                elif m['status'] == "em_andamento":
-                    col2.info("Em andamento")
-                    # Barra de progresso mock
-                    st.progress(0.33, "1 / 3 desafios concluídos")
+                # Try to get status
+                # Na API atual, missoes são listadas globalmente e progresso é buscado
+                # Como simplificação do MVP, apenas deixamos a missão "disponível"
+                if col2.button("Detalhes da Missão", key=f"btn_detalhes_{m.get('id')}"):
+                    st.info("Visualização de etapas de missão ainda não implementada neste MVP.")
 
 if __name__ == "__main__":
     main()

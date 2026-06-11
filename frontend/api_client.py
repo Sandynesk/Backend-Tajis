@@ -62,6 +62,9 @@ def api_request(method, endpoint, data=None, params=None):
 
 # ---- Funções Específicas ----
 
+def get_turma_padrao():
+    return api_request("GET", "/turmas/padrao")
+
 def login(email, senha):
     return api_request("POST", "/auth/login", data={"email": email, "senha": senha})
 

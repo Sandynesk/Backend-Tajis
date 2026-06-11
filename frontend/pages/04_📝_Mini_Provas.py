@@ -11,9 +11,8 @@ def carregar_provas(turma_id):
         provas = api_client.listar_mini_provas_turma(turma_id)
         return provas
     except Exception as e:
-        return [
-            {"id": 1, "titulo": "Quiz de Revisão Python", "tempo_limite": 300, "status": "disponivel", "questoes": [{"id": 1, "enunciado": "O que é uma tupla?", "alternativas": [{"id": "a", "texto": "Lista imutável"}, {"id": "b", "texto": "Um erro de sintaxe"}]}]}
-        ]
+        st.error(f"Erro ao carregar provas: {e}")
+        return []
 
 def js_timer(tempo_segundos):
     """
@@ -32,8 +31,6 @@ def js_timer(tempo_segundos):
                 timerEl.innerHTML = "TEMPO ESGOTADO!";
                 timerEl.style.background = "#9B2C2C";
                 timerEl.style.color = "white";
-                // Idealmente, poderíamos acionar um submit do form pai aqui via postMessage,
-                // mas como o backend já rejeita, apenas avisamos o usuário.
             }} else {{
                 var m = Math.floor(timeLeft / 60);
                 var s = timeLeft % 60;
@@ -48,78 +45,138 @@ def js_timer(tempo_segundos):
 
 def tela_professor():
     st.subheader("📝 Criar Mini-Prova")
+    turma_id = st.session_state.get("turma_id")
     
     if "questoes_nova_prova" not in st.session_state:
         st.session_state.questoes_nova_prova = []
 
     with st.container(border=True):
         titulo = st.text_input("Título da Prova")
-        desc = st.text_area("Descrição")
         tempo_limite = st.number_input("Tempo Limite (segundos)", min_value=60, max_value=3600, value=300)
-        turma = st.selectbox("Turma", ["Turma A", "Turma B"])
         
         st.write("### Questões")
         
         for i, q in enumerate(st.session_state.questoes_nova_prova):
             with st.expander(f"Questão {i+1} - {q['enunciado'][:30]}..."):
-                st.write(q)
+                st.write(f"A: {q['alternativa_a']}")
+                st.write(f"B: {q['alternativa_b']}")
+                st.write(f"C: {q['alternativa_c']}")
+                st.write(f"D: {q['alternativa_d']}")
+                st.write(f"Correta: {q['alternativa_correta']}")
+                st.write(f"Pontos: {q['pontos']}")
                 
         if st.button("➕ Adicionar Nova Questão"):
-            st.session_state.questoes_nova_prova.append({
-                "enunciado": "Nova Questão",
-                "tipo": "multipla_escolha",
-                "alternativas": []
-            })
+            st.session_state.nova_questao_modal = True
             st.rerun()
+            
+        if st.session_state.get("nova_questao_modal", False):
+            with st.form("form_nova_questao"):
+                st.write("Nova Questão")
+                enunc = st.text_area("Enunciado")
+                alt_a = st.text_input("Alternativa A")
+                alt_b = st.text_input("Alternativa B")
+                alt_c = st.text_input("Alternativa C")
+                alt_d = st.text_input("Alternativa D")
+                correta = st.selectbox("Alternativa Correta", ["A", "B", "C", "D"])
+                pontos_q = st.number_input("Pontos", min_value=1, value=10)
+                
+                if st.form_submit_button("Salvar Questão"):
+                    st.session_state.questoes_nova_prova.append({
+                        "enunciado": enunc,
+                        "alternativa_a": alt_a,
+                        "alternativa_b": alt_b,
+                        "alternativa_c": alt_c,
+                        "alternativa_d": alt_d,
+                        "alternativa_correta": correta,
+                        "pontos": pontos_q
+                    })
+                    st.session_state.nova_questao_modal = False
+                    st.rerun()
             
         st.divider()
         if st.button("Salvar Mini-Prova", type="primary"):
-            with st.spinner("Salvando..."):
-                st.success("Prova salva com sucesso! (Mock)")
-                st.session_state.questoes_nova_prova = []
-                st.rerun()
+            if not titulo or not st.session_state.questoes_nova_prova:
+                st.error("Preencha o título e adicione pelo menos uma questão.")
+            else:
+                with st.spinner("Salvando..."):
+                    try:
+                        api_client.criar_mini_prova({
+                            "titulo": titulo,
+                            "turma_id": turma_id,
+                            "duracao_segundos": tempo_limite,
+                            "questoes": st.session_state.questoes_nova_prova
+                        })
+                        st.success("Prova salva com sucesso!")
+                        st.session_state.questoes_nova_prova = []
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao criar prova: {e}")
 
 def tela_aluno():
     st.subheader("📝 Suas Provas Disponíveis")
+    turma_id = st.session_state.get("turma_id")
+    provas = carregar_provas(turma_id)
     
-    # Mock
-    turma_id_mock = 1
-    provas = carregar_provas(turma_id_mock)
-    
+    if not provas:
+        st.info("Você não tem mini-provas disponíveis no momento.")
+        return
+        
     if "prova_em_andamento" not in st.session_state:
         for p in provas:
             with st.container(border=True):
                 col1, col2 = st.columns([3,1])
-                col1.markdown(f"**{p['titulo']}**")
-                col1.write(f"⏱️ Tempo Limite: {p['tempo_limite'] // 60} minutos")
-                if col2.button("Iniciar Prova", key=f"btn_iniciar_{p['id']}", type="primary"):
-                    st.session_state.prova_em_andamento = p
-                    st.rerun()
+                col1.markdown(f"**{p.get('titulo')}**")
+                col1.write(f"⏱️ Tempo Limite: {p.get('duracao_segundos', 300) // 60} minutos")
+                if col2.button("Iniciar Prova", key=f"btn_iniciar_{p.get('id')}", type="primary"):
+                    try:
+                        tentativa = api_client.iniciar_tentativa(p.get('id'))
+                        st.session_state.prova_em_andamento = p
+                        st.session_state.tentativa_id = tentativa.get("id")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao iniciar prova: {e}")
     else:
         prova = st.session_state.prova_em_andamento
+        tentativa_id = st.session_state.tentativa_id
         st.info("⚠️ A prova começou! Não recarregue a página (F5) ou feche a aba, o tempo está correndo no servidor.")
-        st.markdown(f"### {prova['titulo']}")
+        st.markdown(f"### {prova.get('titulo')}")
         
         # Injeta o cronômetro visual em JS
-        js_timer(prova['tempo_limite'])
+        js_timer(prova.get('duracao_segundos', 300))
         
         with st.form("form_prova"):
             respostas = {}
             for q in prova.get('questoes', []):
-                st.markdown(f"**{q['enunciado']}**")
-                opcoes = [alt['texto'] for alt in q['alternativas']]
-                resposta_selecionada = st.radio("Selecione a alternativa correta:", opcoes, key=f"q_{q['id']}")
-                respostas[q['id']] = resposta_selecionada
+                st.markdown(f"**{q.get('enunciado')}**")
+                opcoes = {
+                    "A": q.get('alternativa_a'),
+                    "B": q.get('alternativa_b'),
+                    "C": q.get('alternativa_c'),
+                    "D": q.get('alternativa_d')
+                }
+                # Streamlit radio precisa de lista, mas queremos salvar a chave (A,B,C,D)
+                labels = [f"{k}) {v}" for k, v in opcoes.items()]
+                escolha = st.radio("Selecione a alternativa:", labels, key=f"q_{q.get('id')}", index=None)
+                if escolha:
+                    respostas[q.get('id')] = escolha[0] # Pega 'A', 'B', 'C' ou 'D'
                 st.write("---")
                 
             if st.form_submit_button("Submeter Respostas", type="primary"):
+                # Converter dict para array
+                lista_respostas = [{"questao_id": k, "alternativa_assinalada": v} for k, v in respostas.items()]
                 with st.spinner("Enviando..."):
-                    st.success("Respostas enviadas com sucesso! Sua nota foi calculada. (Mock)")
-                    del st.session_state.prova_em_andamento
-                    st.rerun()
+                    try:
+                        api_client.responder_tentativa(tentativa_id, lista_respostas)
+                        st.success("Respostas enviadas com sucesso! Sua nota foi calculada.")
+                        del st.session_state.prova_em_andamento
+                        del st.session_state.tentativa_id
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao submeter: {e}")
                     
         if st.button("Cancelar e Sair (A tentativa não será salva)"):
             del st.session_state.prova_em_andamento
+            del st.session_state.tentativa_id
             st.rerun()
 
 
@@ -129,6 +186,10 @@ def main():
     
     st.title("📝 Mini-Provas")
     
+    if not st.session_state.get("turma_id"):
+        st.warning("Você não está vinculado a nenhuma turma.")
+        return
+        
     if role == "professor":
         tela_professor()
     elif role == "aluno":

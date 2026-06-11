@@ -24,6 +24,15 @@ class AuthService:
         
         # Salvar no banco
         created_aluno = self.aluno_repo.create(aluno_dict)
+        
+        # Vincular à turma padrão
+        turmas = self.db.fetch_all("turma", filters={"nome": "Turma Padrão MVP"})
+        if turmas:
+            self.db.insert("turma_aluno", {
+                "turma_id": turmas[0]["id"],
+                "aluno_id": created_aluno["id"]
+            })
+            
         return AlunoResponse.model_validate(created_aluno)
 
     def register_professor(self, professor_data: ProfessorCreate) -> ProfessorResponse:

@@ -16,8 +16,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from api import auth, desafios, mini_provas, gamificacao, missoes, formacao, enquetes
+from api import auth, desafios, mini_provas, gamificacao, missoes, formacao, enquetes, turmas
 from core.init_db import init_db
+from core.seed import run_seed
+
+@app.on_event("startup")
+async def startup_event():
+    await run_seed()
 
 app.include_router(auth.router)
 app.include_router(desafios.router)
@@ -26,6 +31,7 @@ app.include_router(gamificacao.router)
 app.include_router(missoes.router)
 app.include_router(formacao.router)
 app.include_router(enquetes.router)
+app.include_router(turmas.router)
 
 @app.get("/")
 def read_root():
