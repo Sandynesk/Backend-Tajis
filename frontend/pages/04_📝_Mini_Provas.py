@@ -58,12 +58,10 @@ def tela_professor():
         
         for i, q in enumerate(st.session_state.questoes_nova_prova):
             with st.expander(f"Questão {i+1} - {q['enunciado'][:30]}..."):
-                st.write(f"A: {q['alternativa_a']}")
-                st.write(f"B: {q['alternativa_b']}")
-                st.write(f"C: {q['alternativa_c']}")
-                st.write(f"D: {q['alternativa_d']}")
-                st.write(f"Correta: {q['alternativa_correta']}")
-                st.write(f"Pontos: {q['pontos']}")
+                for alt in q['alternativas']:
+                    correta_mark = "✅" if alt['correta'] else ""
+                    st.write(f"{alt['letra']}: {alt['texto']} {correta_mark}")
+                st.write(f"Pontos: {q['pontuacao']}")
                 
         if st.button("➕ Adicionar Nova Questão"):
             st.session_state.nova_questao_modal = True
@@ -83,12 +81,14 @@ def tela_professor():
                 if st.form_submit_button("Salvar Questão"):
                     st.session_state.questoes_nova_prova.append({
                         "enunciado": enunc,
-                        "alternativa_a": alt_a,
-                        "alternativa_b": alt_b,
-                        "alternativa_c": alt_c,
-                        "alternativa_d": alt_d,
-                        "alternativa_correta": correta,
-                        "pontos": pontos_q
+                        "tipo": "multipla_escolha",
+                        "pontuacao": float(pontos_q),
+                        "alternativas": [
+                            {"letra": "A", "texto": alt_a, "correta": correta == "A"},
+                            {"letra": "B", "texto": alt_b, "correta": correta == "B"},
+                            {"letra": "C", "texto": alt_c, "correta": correta == "C"},
+                            {"letra": "D", "texto": alt_d, "correta": correta == "D"}
+                        ]
                     })
                     st.session_state.nova_questao_modal = False
                     st.rerun()
@@ -103,7 +103,7 @@ def tela_professor():
                         api_client.criar_mini_prova({
                             "titulo": titulo,
                             "turma_id": turma_id,
-                            "duracao_segundos": tempo_limite,
+                            "tempo_limite_segundos": tempo_limite,
                             "questoes": st.session_state.questoes_nova_prova
                         })
                         st.success("Prova salva com sucesso!")
@@ -129,8 +129,9 @@ def tela_aluno():
                 col1.write(f"⏱️ Tempo Limite: {p.get('duracao_segundos', 300) // 60} minutos")
                 if col2.button("Iniciar Prova", key=f"btn_iniciar_{p.get('id')}", type="primary"):
                     try:
+                        prova_completa = api_client.obter_prova_detalhes(p.get('id'))
                         tentativa = api_client.iniciar_tentativa(p.get('id'))
-                        st.session_state.prova_em_andamento = p
+                        st.session_state.prova_em_andamento = prova_completa
                         st.session_state.tentativa_id = tentativa.get("id")
                         st.rerun()
                     except Exception as e:
@@ -148,17 +149,16 @@ def tela_aluno():
             respostas = {}
             for q in prova.get('questoes', []):
                 st.markdown(f"**{q.get('enunciado')}**")
-                opcoes = {
-                    "A": q.get('alternativa_a'),
-                    "B": q.get('alternativa_b'),
-                    "C": q.get('alternativa_c'),
-                    "D": q.get('alternativa_d')
-                }
-                # Streamlit radio precisa de lista, mas queremos salvar a chave (A,B,C,D)
-                labels = [f"{k}) {v}" for k, v in opcoes.items()]
-                escolha = st.radio("Selecione a alternativa:", labels, key=f"q_{q.get('id')}", index=None)
-                if escolha:
-                    respostas[q.get('id')] = escolha[0] # Pega 'A', 'B', 'C' ou 'D'
+                
+                # Extrai as alternativas da lista de dicionários
+                alternativas_list = q.get('alternativas', [])
+                if alternativas_list:
+                    labels = [f"{alt.get('letra')}) {alt.get('texto')}" for alt in alternativas_list]
+                    escolha = st.radio("Selecione a alternativa:", labels, key=f"q_{q.get('id')}", index=None)
+                    if escolha:
+                        respostas[q.get('id')] = escolha[0] # Pega a letra (primeiro caractere)
+                else:
+                    st.info("Questão sem alternativas.")
                 st.write("---")
                 
             if st.form_submit_button("Submeter Respostas", type="primary"):

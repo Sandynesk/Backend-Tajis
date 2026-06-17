@@ -88,6 +88,9 @@ def listar_mini_provas_turma(turma_id):
 def criar_mini_prova(data):
     return api_request("POST", "/mini-provas", data=data)
 
+def obter_prova_detalhes(prova_id):
+    return api_request("GET", f"/mini-provas/{prova_id}")
+
 def iniciar_tentativa(prova_id):
     return api_request("POST", f"/mini-provas/{prova_id}/iniciar")
 
@@ -112,7 +115,7 @@ def get_ranking_semanal():
     return api_request("GET", "/gamificacao/ranking/semanal")
 
 def get_medalhas_aluno(aluno_id):
-    return api_request("GET", f"/gamificacao/medalhas/{aluno_id}")
+    return api_request("GET", f"/gamificacao/alunos/{aluno_id}/medalhas")
 
 def get_progresso_aluno(aluno_id):
     return api_request("GET", f"/gamificacao/progresso/{aluno_id}")
@@ -132,7 +135,7 @@ def listar_formacoes_turma(turma_id):
     return api_request("GET", f"/formacao/turma/{turma_id}")
 
 def criar_formacao(data):
-    return api_request("POST", "/formacao", data=data)
+    return api_request("POST", "/formacao/", data=data)
 
 # Turmas
 def listar_turmas_professor():

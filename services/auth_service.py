@@ -7,6 +7,7 @@ from core.security import get_password_hash, verify_password, create_access_toke
 
 class AuthService:
     def __init__(self, db: DatabaseProvider):
+        self.db = db
         self.aluno_repo = AlunoRepository(db)
         self.prof_repo = ProfessorRepository(db)
 

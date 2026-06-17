@@ -49,6 +49,31 @@ def get_nivel_aluno(
         raise HTTPException(status_code=404, detail="Nenhum nível alcançado ainda")
     return nivel
 
+@router.get("/progresso/{aluno_id}")
+def get_progresso_aluno(
+    aluno_id: str,
+    user = Depends(get_current_user),
+    service: GamificacaoService = Depends(get_gamificacao_service),
+    db: DatabaseProvider = Depends(get_database_provider)
+):
+    # Fetch total points from ranking view
+    res = db.client.table("ranking_geral_view").select("pontos_total").eq("aluno_id", aluno_id).execute()
+    pontos = res.data[0]["pontos_total"] if res.data else 0
+    
+    nivel = service.verificar_nivel(aluno_id)
+    nivel_atual = nivel.id if nivel else 1
+    
+    # Counts (optional: we can query real tables or just default for MVP)
+    desafios_res = db.client.table("solucoes_desafio").select("id", count="exact").eq("aluno_id", aluno_id).execute()
+    missoes_res = db.client.table("progresso_missao").select("id", count="exact").eq("aluno_id", aluno_id).execute()
+    
+    return {
+        "pontuacao": pontos,
+        "nivel": nivel_atual,
+        "desafios_completos": desafios_res.count if desafios_res.count else 0,
+        "missoes_ativas": missoes_res.count if missoes_res.count else 0
+    }
+
 @router.post("/acoes", response_model=AcaoGamificacaoResponse, status_code=status.HTTP_201_CREATED)
 def cadastrar_acao(
     acao: AcaoGamificacaoCreate,

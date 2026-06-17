@@ -50,7 +50,8 @@ def main():
                                 api_client.api_request("POST", "/enquetes/", data={
                                     "titulo": titulo,
                                     "turma_id": turma_id,
-                                    "opcoes": opcoes_validas
+                                    "tipo": "unica",
+                                    "opcoes": [{"texto": o} for o in opcoes_validas]
                                 })
                                 st.success("Enquete lançada!")
                                 st.session_state.opcoes_nova_enquete = ["Opção 1"]
@@ -97,14 +98,16 @@ def main():
                 opcoes = e.get('opcoes', [])
                 if opcoes:
                     with st.form(f"form_voto_{e.get('id')}"):
-                        # Se opcoes for lista de strings ou lista de dicts
-                        nomes_opcoes = [op.get('texto') if isinstance(op, dict) else op for op in opcoes]
+                        # Criar um dict para mapear texto para id
+                        mapa_opcoes = {op.get('texto'): op.get('id') for op in opcoes if isinstance(op, dict)}
+                        nomes_opcoes = list(mapa_opcoes.keys())
+                        
                         voto = st.radio("Selecione sua resposta:", nomes_opcoes)
                         if st.form_submit_button("Votar", type="primary"):
                             with st.spinner("Enviando..."):
                                 try:
-                                    # Para o MVP assumimos que votar_enquete recebe opcao como string ou ID
-                                    api_client.api_request("POST", f"/enquetes/{e.get('id')}/votar", data={"opcao": voto})
+                                    opcao_id = mapa_opcoes.get(voto)
+                                    api_client.api_request("POST", f"/enquetes/{e.get('id')}/votar", data={"opcoes_ids": [opcao_id]})
                                     st.success("Seu voto foi registrado!")
                                 except Exception as err:
                                     st.error(f"Erro ao votar: {err}")

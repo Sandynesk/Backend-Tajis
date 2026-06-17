@@ -39,6 +39,14 @@ def listar_missoes_disponiveis(
     
     return service.listar_missoes_disponiveis(turma_id)
 
+@router.get("/turma/{turma_id}", response_model=List[MissaoResponse])
+def listar_missoes_turma(
+    turma_id: str,
+    user = Depends(get_current_user),
+    service: MissaoService = Depends(get_missao_service)
+):
+    return service.listar_missoes_disponiveis(turma_id)
+
 @router.post("/{missao_id}/iniciar", response_model=ProgressoMissaoResponse, status_code=status.HTTP_201_CREATED)
 def iniciar_missao(
     missao_id: int,

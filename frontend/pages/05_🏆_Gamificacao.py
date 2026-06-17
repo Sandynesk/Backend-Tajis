@@ -40,8 +40,8 @@ def main():
         st.subheader("Seu Status Atual")
         progresso_aluno = carregar_progresso()
         if progresso_aluno:
-            nivel_atual = progresso_aluno.get("nivel_atual", 1)
-            pontos_atuais = progresso_aluno.get("xp_acumulado", 0)
+            nivel_atual = progresso_aluno.get("nivel", 1)
+            pontos_atuais = progresso_aluno.get("pontuacao", 0)
             pontos_prox_nivel = progresso_aluno.get("xp_proximo_nivel", pontos_atuais + 1000) # Fallback
             
             st.markdown(f"**Nível {nivel_atual}**")

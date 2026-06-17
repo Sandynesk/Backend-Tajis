@@ -34,10 +34,13 @@ class EnqueteService:
 
     def listar_enquetes_turma(self, turma_id: str) -> List[EnqueteResponse]:
         enquetes = self.repo.listar_enquetes_turma(turma_id)
-        # Se precisar dos percentuais na listagem, iteramos get_resultado
-        # Mas para performance, podemos retornar o básico
-        # Aqui, como é um payload simples, vamos só formatar os básicos (opcoes=[] no modelo base)
-        return [EnqueteResponse.model_validate(e) for e in enquetes]
+        resultados = []
+        for e in enquetes:
+            try:
+                resultados.append(self.get_resultado(e["id"]))
+            except Exception:
+                pass
+        return resultados
 
     def votar(self, enquete_id: int, aluno_id: str, voto: VotoRequest) -> EnqueteResponse:
         # A RPC já lida com validação de prazo, se está ativa e unicidade de voto

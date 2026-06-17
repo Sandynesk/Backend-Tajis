@@ -35,7 +35,18 @@ def main():
                             api_client.api_request("POST", "/missoes/", data={
                                 "titulo": titulo,
                                 "descricao": desc,
-                                "turma_id": turma_id
+                                "turma_id": turma_id,
+                                "tipo": "individual",
+                                "pontos_recompensa": 100,
+                                "etapas": [
+                                    {
+                                        "ordem": 1,
+                                        "descricao": "Concluir o primeiro desafio",
+                                        "tipo_acao": "desafio_concluido",
+                                        "meta": 1,
+                                        "pontos_etapa": 50
+                                    }
+                                ]
                             })
                             st.success("Missão criada!")
                         except Exception as e:

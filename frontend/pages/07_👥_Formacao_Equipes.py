@@ -32,10 +32,9 @@ def main():
                 if st.form_submit_button("Gerar Equipes (Zig-Zag Algorithm)", type="primary"):
                     with st.spinner("Gerando equipes..."):
                         try:
-                            # A rota exata depende da implementação no backend, usando gerar_formacao aqui
-                            api_client.api_request("POST", "/formacao/gerar", data={
+                            api_client.criar_formacao({
                                 "turma_id": turma_id,
-                                "nome_formacao": nome_formacao,
+                                "nome": nome_formacao,
                                 "tamanho_grupo": tamanho
                             })
                             st.success("Equipes geradas com sucesso!")
